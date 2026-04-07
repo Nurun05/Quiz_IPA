@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis IPA: Dunia Hewan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Light green background */
+        }
+        .option-btn {
+            transition: all 0.2s ease;
+        }
+        .option-btn:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        .correct {
+            background-color: #22c55e !important;
+            color: white !important;
+            border-color: #16a34a !important;
+        }
+        .wrong {
+            background-color: #ef4444 !important;
+            color: white !important;
+            border-color: #dc2626 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="quiz-container" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- Progress Bar -->
+        <div class="h-2 bg-gray-100 w-full">
+            <div id="progress-bar" class="h-full bg-green-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <div class="p-6 md:p-8">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-xl font-bold text-green-800">Kuis Dunia Hewan</h1>
+                <span id="question-counter" class="text-sm font-medium text-gray-500">Pertanyaan 1/10</span>
+            </div>
+
+            <!-- Question Section -->
+            <div id="question-area">
+                <p id="question-text" class="text-lg md:text-xl text-gray-800 font-semibold mb-6">
+                    Memuat pertanyaan...
+                </p>
+
+                <!-- Options -->
+                <div id="options-container" class="space-y-3">
+                    <!-- Buttons will be generated here -->
+                </div>
+            </div>
+
+            <!-- Result Section (Hidden by default) -->
+            <div id="result-area" class="hidden text-center py-8">
+                <div class="text-6xl mb-4">🏆</div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Kuis Selesai!</h2>
+                <p class="text-gray-600 mb-6">Skor Anda:</p>
+                <div class="text-5xl font-black text-green-600 mb-8" id="final-score">0/10</div>
+                <button onclick="restartQuiz()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full transition-colors">
+                    Main Lagi
+                </button>
+            </div>
+
+            <!-- Footer Navigation -->
+            <div id="nav-footer" class="mt-8 pt-6 border-t border-gray-100 flex justify-end">
+                <button id="next-btn" onclick="nextQuestion()" class="hidden bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+                    Lanjut
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                q: "Contoh hewan yang bermetamorfosis adalah . . . .",
+                options: ["Kerbau", "Kecoa", "Buaya", "Ayam"],
+                correct: 1
+            },
+            {
+                q: "Tahapan metamorfosis pada katak yang benar adalah . . .",
+                options: [
+                    "Telur - berudu - berudu berkaki - katak muda berekor - katak dewasa",
+                    "Katak dewasa - berudu - berudu berekor - berudu berkaki - telur",
+                    "Telur - berudu berkaki - berudu - katak muda berekor - katak dewasa",
+                    "Telur - berudu - katak muda berekor - berudu berkaki - katak dewasa"
+                ],
+                correct: 0
+            },
+            {
+                q: "Alat gerak pada ular adalah . . .",
+                options: ["Kaki", "Sirip", "Sayap", "Perut"],
+                correct: 3
+            },
+            {
+                q: "Burung berkembangbiak dengan cara . . . .",
+                options: ["Ovipar", "Vivipar", "Ovovivipar", "Amfibi"],
+                correct: 0
+            },
+            {
+                q: "Salah satu ciri hewan mamalia adalah . . . .",
+                options: ["Menyusui anaknya", "Bertelur", "Mempunyai paruh", "Dapat hidup di dua alam"],
+                correct: 0
+            },
+            {
+                q: "Hewan insekta memiliki kaki sebanyak . . .",
+                options: ["2 pasang", "4 pasang", "3 pasang", "5 pasang"],
+                correct: 2
+            },
+            {
+                q: "Serangga yang mempunyai jenis mulut penjilat adalah . . . .",
+                options: ["Nyamuk", "Kupu-kupu", "Belalang", "Lalat"],
+                correct: 3
+            },
+            {
+                q: "Contoh hewan mamalia yaitu . . . .",
+                options: ["Burung", "Sapi", "Katak", "Buaya"],
+                correct: 1
+            },
+            {
+                q: "Contoh burung yang mempunyai bentuk kaki pemangsa adalah . . . .",
+                options: ["Burung nuri", "Burung pelikan", "Burung elang", "Burung pelatuk"],
+                correct: 2
+            },
+            {
+                q: "Contoh hewan amfibi adalah . . . .",
+                options: ["Ikan", "Katak", "Burung", "Ular"],
+                correct: 1
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answered = false;
+
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const counterText = document.getElementById('question-counter');
+        const progressBar = document.getElementById('progress-bar');
+        const nextBtn = document.getElementById('next-btn');
+        const questionArea = document.getElementById('question-area');
+        const resultArea = document.getElementById('result-area');
+        const navFooter = document.getElementById('nav-footer');
+        const finalScore = document.getElementById('final-score');
+
+        function loadQuestion() {
+            answered = false;
+            nextBtn.classList.add('hidden');
+            const data = quizData[currentQuestion];
+            
+            questionText.innerText = data.q;
+            counterText.innerText = `Pertanyaan ${currentQuestion + 1}/${quizData.length}`;
+            progressBar.style.width = `${((currentQuestion + 1) / quizData.length) * 100}%`;
+
+            optionsContainer.innerHTML = '';
+            data.options.forEach((opt, index) => {
+                const button = document.createElement('button');
+                button.className = 'option-btn w-full text-left p-4 rounded-xl border-2 border-gray-100 bg-gray-50 text-gray-700 font-medium hover:border-green-200 hover:bg-green-50';
+                button.innerText = `${String.fromCharCode(65 + index)}. ${opt}`;
+                button.onclick = () => checkAnswer(index, button);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selectedIndex, btn) {
+            if (answered) return;
+            answered = true;
+            
+            const correctIndex = quizData[currentQuestion].correct;
+            const buttons = optionsContainer.getElementsByTagName('button');
+
+            if (selectedIndex === correctIndex) {
+                btn.classList.add('correct');
+                score++;
+            } else {
+                btn.classList.add('wrong');
+                buttons[correctIndex].classList.add('correct');
+            }
+
+            // Disable all buttons
+            for (let b of buttons) {
+                b.disabled = true;
+                if (!b.classList.contains('correct') && !b.classList.contains('wrong')) {
+                    b.classList.add('opacity-50');
+                }
+            }
+
+            nextBtn.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            questionArea.classList.add('hidden');
+            navFooter.classList.add('hidden');
+            resultArea.classList.remove('hidden');
+            finalScore.innerText = `${score} / ${quizData.length}`;
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            questionArea.classList.remove('hidden');
+            navFooter.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+            loadQuestion();
+        }
+
+        // Initialize quiz
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
